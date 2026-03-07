@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arduino Serial Monitor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', 'Courier New', monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+    h1 { color: #569cd6; margin-bottom: 10px; font-size: 1.4rem; }
+    #status { margin-bottom: 12px; font-size: 0.9rem; }
+    .connected { color: #4ec9b0; }
+    .disconnected { color: #f44747; }
+    #log { background: #111; border: 1px solid #333; border-radius: 4px; padding: 12px; height: 70vh; overflow-y: auto; font-size: 0.85rem; line-height: 1.5; }
+    .entry { border-bottom: 1px solid #222; padding: 2px 0; }
+    .ts { color: #888; margin-right: 10px; }
+    .val { color: #ce9178; }
+  </style>
+</head>
+<body>
+  <h1>Arduino Serial Monitor (WebSocket)</h1>
+  <div id="status" class="disconnected">Disconnected</div>
+  <div id="log"></div>
+
+  <script>
+    const WS_URL = "ws://localhost:8080";
+    const log = document.getElementById("log");
+    const status = document.getElementById("status");
+    let ws;
+
+    function connect() {
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        status.textContent = "Connected";
+        status.className = "connected";
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        const entry = document.createElement("div");
+        entry.className = "entry";
+
+        const time = new Date(msg.timestamp).toLocaleTimeString();
+        entry.innerHTML = `<span class="ts">${time}</span><span class="val">${msg.data}</span>`;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+      };
+
+      ws.onclose = () => {
+        status.textContent = "Disconnected – reconnecting…";
+        status.className = "disconnected";
+        setTimeout(connect, 2000);
+      };
+
+      ws.onerror = () => ws.close();
+    }
+
+    connect();
+  </script>
+</body>
+</html>
