@@ -54,11 +54,32 @@ function connectSerial() {
     const trimmed = line.trim();
     if (trimmed.length === 0) return;
 
-    const message = {
-      type: "serial",
-      data: trimmed,
-      timestamp: Date.now(),
-    };
+    let message;
+    const parts = trimmed.split(',');
+    
+    if (parts.length >= 8) {
+      const vals = parts.map(Number);
+      message = {
+        fingers: {
+          pinky: vals[0],
+          ring: vals[1],
+          middle: vals[2],
+          index: vals[3],
+          thumb: vals[4]
+        },
+        orientation: {
+          roll: vals[5],
+          pitch: vals[6],
+          yaw: vals[7]
+        }
+      };
+    } else {
+      message = {
+        type: "serial",
+        data: trimmed,
+        timestamp: Date.now(),
+      };
+    }
 
     broadcast(message);
   });

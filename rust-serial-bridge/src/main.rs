@@ -71,11 +71,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     line_buf = line_buf[pos + 1..].to_string();
 
                                     if !line.is_empty() {
-                                        let payload = serde_json::json!({
-                                            "type": "serial",
-                                            "data": line,
-                                            "timestamp": chrono_now_ms()
-                                        });
+                                        let parts: Vec<&str> = line.split(',').collect();
+                                        let payload = if parts.len() >= 8 {
+                                            let vals: Result<Vec<f64>, _> = parts.iter().map(|s| s.parse::<f64>()).collect();
+                                            if let Ok(vals) = vals {
+                                                serde_json::json!({
+                                                    "fingers": {
+                                                        "pinky": vals[0],
+                                                        "ring": vals[1],
+                                                        "middle": vals[2],
+                                                        "index": vals[3],
+                                                        "thumb": vals[4]
+                                                    },
+                                                    "orientation": {
+                                                        "roll": vals[5],
+                                                        "pitch": vals[6],
+                                                        "yaw": vals[7]
+                                                    }
+                                                })
+                                            } else {
+                                                serde_json::json!({
+                                                    "type": "serial",
+                                                    "data": line,
+                                                    "timestamp": chrono_now_ms()
+                                                })
+                                            }
+                                        } else {
+                                            serde_json::json!({
+                                                "type": "serial",
+                                                "data": line,
+                                                "timestamp": chrono_now_ms()
+                                            })
+                                        };
                                         let msg = payload.to_string();
                                         // Ignore send errors (no subscribers yet)
                                         let _ = serial_tx.send(msg);
